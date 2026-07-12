@@ -43,6 +43,11 @@ public class OrderService {
         return orderRepository.findByStatus(status);
     }
 
+    @Transactional(readOnly = true)
+    public List<Order> findAll() {
+        return orderRepository.findAll();
+    }
+
     /**
      * Advances an order to the given status. The Order entity enforces which
      * moves are legal; this method additionally releases the courier when the
