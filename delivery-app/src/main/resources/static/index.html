@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Delivery App</title>
+  <style>
+    :root {
+      --bg: #f4f5f7;
+      --panel: #ffffff;
+      --panel-2: #fafbfc;
+      --border: #e3e6ea;
+      --text: #1c2024;
+      --muted: #6b7280;
+      --accent: #4f46e5;
+      --accent-fg: #ffffff;
+      --danger: #dc2626;
+      --danger-bg: #fef2f2;
+      --ok: #16a34a;
+      --shadow: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+      --radius: 12px;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0e1116;
+        --panel: #161b22;
+        --panel-2: #1b222b;
+        --border: #2a313a;
+        --text: #e6edf3;
+        --muted: #8b949e;
+        --accent: #6366f1;
+        --danger: #f87171;
+        --danger-bg: #2a1416;
+        --ok: #4ade80;
+        --shadow: 0 1px 3px rgba(0,0,0,.4);
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.45;
+    }
+    header {
+      position: sticky; top: 0; z-index: 10;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 24px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    header h1 { font-size: 18px; margin: 0; letter-spacing: -.2px; }
+    header .logo {
+      width: 30px; height: 30px; border-radius: 8px;
+      background: linear-gradient(135deg, var(--accent), #8b5cf6);
+      display: grid; place-items: center; color: #fff; font-size: 16px;
+    }
+    header .spacer { flex: 1; }
+    button {
+      font: inherit; cursor: pointer; border: 1px solid var(--border);
+      background: var(--panel-2); color: var(--text);
+      border-radius: 8px; padding: 6px 12px; transition: .12s;
+    }
+    button:hover { border-color: var(--accent); }
+    button.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+    button.primary:hover { filter: brightness(1.08); }
+    button.danger { color: var(--danger); border-color: transparent; background: var(--danger-bg); }
+    button.small { padding: 4px 9px; font-size: 12px; }
+    button:disabled { opacity: .5; cursor: not-allowed; }
+
+    main {
+      max-width: 1180px; margin: 0 auto; padding: 24px;
+      display: grid; grid-template-columns: 1.6fr 1fr; gap: 24px;
+    }
+    @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+
+    .panel {
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: var(--radius); box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .panel > .head {
+      padding: 14px 18px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .panel > .head h2 { margin: 0; font-size: 15px; }
+    .panel > .head .spacer { flex: 1; }
+    .panel > .body { padding: 16px 18px; }
+    .stack { display: grid; gap: 12px; }
+
+    .order {
+      border: 1px solid var(--border); border-radius: 10px;
+      padding: 14px; background: var(--panel-2);
+    }
+    .order .top { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .order .oid { font-weight: 600; }
+    .order .cust { color: var(--muted); font-size: 13px; }
+    .order .items { font-size: 13px; color: var(--muted); margin: 6px 0; }
+    .order .total { font-weight: 600; }
+    .order .courier { font-size: 12px; color: var(--muted); margin-top: 4px; }
+    .order .actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+
+    .badge {
+      font-size: 11px; font-weight: 600; letter-spacing: .3px;
+      padding: 3px 9px; border-radius: 999px; text-transform: none;
+      white-space: nowrap;
+    }
+    .b-PLACED { background: #e0e7ff; color: #3730a3; }
+    .b-CONFIRMED { background: #cffafe; color: #155e63; }
+    .b-PICKED_UP { background: #fef3c7; color: #92400e; }
+    .b-OUT_FOR_DELIVERY { background: #fed7aa; color: #9a3412; }
+    .b-DELIVERED { background: #dcfce7; color: #166534; }
+    .b-CANCELLED { background: #fee2e2; color: #991b1b; }
+    .b-AVAILABLE { background: #dcfce7; color: #166534; }
+    .b-BUSY { background: #fee2e2; color: #991b1b; }
+    @media (prefers-color-scheme: dark) {
+      .b-PLACED { background: #312e81; color: #c7d2fe; }
+      .b-CONFIRMED { background: #164e5b; color: #a5f3fc; }
+      .b-PICKED_UP { background: #713f12; color: #fde68a; }
+      .b-OUT_FOR_DELIVERY { background: #7c2d12; color: #fed7aa; }
+      .b-DELIVERED { background: #14532d; color: #bbf7d0; }
+      .b-CANCELLED { background: #7f1d1d; color: #fecaca; }
+      .b-AVAILABLE { background: #14532d; color: #bbf7d0; }
+      .b-BUSY { background: #7f1d1d; color: #fecaca; }
+    }
+
+    .courier-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 0; border-bottom: 1px solid var(--border);
+    }
+    .courier-row:last-child { border-bottom: none; }
+    .courier-row .name { font-weight: 500; }
+    .courier-row .phone { color: var(--muted); font-size: 12px; }
+    .courier-row .spacer { flex: 1; }
+
+    form.mini { display: grid; gap: 8px; }
+    label { font-size: 12px; color: var(--muted); display: grid; gap: 4px; }
+    input, select {
+      font: inherit; padding: 7px 9px; border-radius: 7px;
+      border: 1px solid var(--border); background: var(--panel-2); color: var(--text);
+    }
+    input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+    .row { display: flex; gap: 8px; }
+    .row > * { flex: 1; }
+    .item-row { display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 6px; align-items: end; }
+    .item-row button { align-self: stretch; }
+
+    .empty { color: var(--muted); font-size: 13px; padding: 8px 0; }
+    .muted { color: var(--muted); font-size: 12px; }
+    details summary { cursor: pointer; font-size: 13px; font-weight: 600; padding: 4px 0; }
+
+    #toast {
+      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+      background: var(--text); color: var(--bg); padding: 10px 18px;
+      border-radius: 8px; font-size: 13px; opacity: 0; pointer-events: none;
+      transition: opacity .2s, transform .2s; max-width: 90vw; box-shadow: var(--shadow);
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(-4px); }
+    #toast.err { background: var(--danger); color: #fff; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">🛵</div>
+    <h1>Delivery App</h1>
+    <div class="spacer"></div>
+    <a class="muted" href="/swagger-ui.html" style="text-decoration:none">API docs ↗</a>
+    <button class="small" id="refresh">↻ Refresh</button>
+  </header>
+
+  <main>
+    <!-- LEFT: orders -->
+    <section class="panel">
+      <div class="head">
+        <h2>Orders</h2>
+        <div class="spacer"></div>
+        <select id="filter" class="small">
+          <option value="">All statuses</option>
+        </select>
+      </div>
+      <div class="body">
+        <div id="orders" class="stack"></div>
+      </div>
+    </section>
+
+    <!-- RIGHT: couriers + forms -->
+    <div class="stack">
+      <section class="panel">
+        <div class="head"><h2>Couriers</h2></div>
+        <div class="body">
+          <div id="couriers"></div>
+          <details style="margin-top:10px">
+            <summary>+ Register courier</summary>
+            <form class="mini" id="courierForm" style="margin-top:8px">
+              <label>Name<input name="name" required placeholder="Sam Speed" /></label>
+              <label>Phone<input name="phone" placeholder="555-0203" /></label>
+              <button class="primary" type="submit">Register courier</button>
+            </form>
+          </details>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="head"><h2>Place an order</h2></div>
+        <div class="body">
+          <form class="mini" id="orderForm">
+            <label>Customer
+              <select name="customerId" id="customerSelect" required></select>
+            </label>
+            <label>Delivery address <span class="muted">(optional — defaults to customer's)</span>
+              <input name="deliveryAddress" placeholder="Leave blank to use customer address" />
+            </label>
+            <div class="muted">Items</div>
+            <div id="items" class="stack"></div>
+            <button type="button" class="small" id="addItem" style="justify-self:start">+ Add item</button>
+            <button class="primary" type="submit">Place order</button>
+          </form>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="head"><h2>New customer</h2></div>
+        <div class="body">
+          <form class="mini" id="customerForm">
+            <label>Name<input name="name" required placeholder="Ada Lovelace" /></label>
+            <label>Email<input name="email" type="email" required placeholder="ada@example.com" /></label>
+            <label>Phone<input name="phone" placeholder="555-0100" /></label>
+            <label>Address<input name="address" required placeholder="1 Analytical Way" /></label>
+            <button class="primary" type="submit">Create customer</button>
+          </form>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <div id="toast"></div>
+
+  <script>
+    const ORDER_STATUSES = ["PLACED","CONFIRMED","PICKED_UP","OUT_FOR_DELIVERY","DELIVERED","CANCELLED"];
+    // Mirrors OrderStatus.allowedNextStatuses on the server.
+    const NEXT = {
+      PLACED: ["CONFIRMED","CANCELLED"],
+      CONFIRMED: ["PICKED_UP","CANCELLED"],
+      PICKED_UP: ["OUT_FOR_DELIVERY"],
+      OUT_FOR_DELIVERY: ["DELIVERED"],
+      DELIVERED: [],
+      CANCELLED: [],
+    };
+    const STATUS_LABEL = {
+      PLACED:"Placed", CONFIRMED:"Confirmed", PICKED_UP:"Picked up",
+      OUT_FOR_DELIVERY:"Out for delivery", DELIVERED:"Delivered", CANCELLED:"Cancelled"
+    };
+
+    // Track known customer ids so the order form's dropdown stays useful even
+    // though the API has no "list customers" endpoint.
+    const knownCustomers = new Map(); // id -> name
+
+    const $ = (s, el=document) => el.querySelector(s);
+    const money = n => "$" + Number(n).toFixed(2);
+
+    function toast(msg, isErr=false) {
+      const t = $("#toast");
+      t.textContent = msg;
+      t.className = "show" + (isErr ? " err" : "");
+      setTimeout(() => t.className = "", 2600);
+    }
+
+    async function api(method, path, body) {
+      const opts = { method, headers: {} };
+      if (body !== undefined) {
+        opts.headers["Content-Type"] = "application/json";
+        opts.body = JSON.stringify(body);
+      }
+      const res = await fetch(path, opts);
+      const text = await res.text();
+      const data = text ? JSON.parse(text) : null;
+      if (!res.ok) {
+        const msg = data && (data.message || data.error ||
+          (data.fieldErrors && Object.values(data.fieldErrors).join("; "))) ||
+          ("HTTP " + res.status);
+        throw new Error(msg);
+      }
+      return data;
+    }
+
+    function badge(status) {
+      return `<span class="badge b-${status}">${STATUS_LABEL[status] || status}</span>`;
+    }
+
+    function orderCard(o) {
+      const items = o.items.map(i => `${i.quantity}× ${i.productName}`).join(", ");
+      const actions = [];
+      for (const next of NEXT[o.status]) {
+        const cls = next === "CANCELLED" ? "danger" : "";
+        const label = next === "CANCELLED" ? "Cancel" : "→ " + STATUS_LABEL[next];
+        actions.push(`<button class="small ${cls}" data-act="status" data-id="${o.id}" data-next="${next}">${label}</button>`);
+      }
+      if (!o.courierId && o.status !== "DELIVERED" && o.status !== "CANCELLED") {
+        actions.push(`<button class="small" data-act="assign" data-id="${o.id}">Assign courier</button>`);
+      }
+      const courierLine = o.courierId
+        ? `🛵 ${o.courierName} (courier #${o.courierId})`
+        : `<span class="muted">No courier assigned</span>`;
+      return `<div class="order">
+        <div class="top">
+          <span class="oid">#${o.id}</span>${badge(o.status)}
+          <span class="cust">${o.customerName}</span>
+          <span style="flex:1"></span>
+          <span class="total">${money(o.total)}</span>
+        </div>
+        <div class="items">${items} · to ${o.deliveryAddress}</div>
+        <div class="courier">${courierLine}</div>
+        <div class="actions">${actions.join("") || '<span class="muted">No actions — terminal state</span>'}</div>
+      </div>`;
+    }
+
+    async function loadOrders() {
+      const filter = $("#filter").value;
+      const path = filter ? `/api/orders?status=${filter}` : "/api/orders";
+      const orders = await api("GET", path);
+      orders.forEach(o => knownCustomers.set(o.customerId, o.customerName));
+      const el = $("#orders");
+      el.innerHTML = orders.length
+        ? orders.map(orderCard).join("")
+        : `<div class="empty">No orders${filter ? " with status " + filter : ""} yet.</div>`;
+      refreshCustomerSelect();
+    }
+
+    async function loadCouriers() {
+      const couriers = await api("GET", "/api/couriers");
+      $("#couriers").innerHTML = couriers.length
+        ? couriers.map(c => `<div class="courier-row">
+            <span class="name">${c.name}</span>
+            <span class="phone">${c.phone || ""}</span>
+            <span class="spacer"></span>
+            ${badge(c.status)}
+          </div>`).join("")
+        : `<div class="empty">No couriers registered.</div>`;
+    }
+
+    function refreshCustomerSelect() {
+      const sel = $("#customerSelect");
+      const current = sel.value;
+      const opts = [...knownCustomers.entries()]
+        .sort((a,b) => a[0]-b[0])
+        .map(([id,name]) => `<option value="${id}">#${id} — ${name}</option>`)
+        .join("");
+      sel.innerHTML = opts || `<option value="" disabled>Create a customer first</option>`;
+      if (current) sel.value = current;
+    }
+
+    function itemRow() {
+      const div = document.createElement("div");
+      div.className = "item-row";
+      div.innerHTML = `
+        <label>Product<input name="productName" required placeholder="Pizza" /></label>
+        <label>Qty<input name="quantity" type="number" min="1" value="1" required /></label>
+        <label>Price<input name="price" type="number" min="0" step="0.01" value="0.00" required /></label>
+        <button type="button" class="small danger" title="Remove">✕</button>`;
+      div.querySelector("button").onclick = () => {
+        if ($("#items").children.length > 1) div.remove();
+      };
+      return div;
+    }
+
+    async function refreshAll() {
+      try { await Promise.all([loadOrders(), loadCouriers()]); }
+      catch (e) { toast(e.message, true); }
+    }
+
+    // ---- wiring ----
+    document.addEventListener("DOMContentLoaded", () => {
+      ORDER_STATUSES.forEach(s => {
+        const o = document.createElement("option");
+        o.value = s; o.textContent = STATUS_LABEL[s];
+        $("#filter").appendChild(o);
+      });
+      $("#items").appendChild(itemRow());
+      $("#addItem").onclick = () => $("#items").appendChild(itemRow());
+      $("#refresh").onclick = refreshAll;
+      $("#filter").onchange = () => loadOrders().catch(e => toast(e.message, true));
+
+      $("#orders").addEventListener("click", async (e) => {
+        const btn = e.target.closest("button[data-act]");
+        if (!btn) return;
+        btn.disabled = true;
+        try {
+          const id = btn.dataset.id;
+          if (btn.dataset.act === "status") {
+            await api("PATCH", `/api/orders/${id}/status`, { status: btn.dataset.next });
+            toast(`Order #${id} → ${STATUS_LABEL[btn.dataset.next]}`);
+          } else if (btn.dataset.act === "assign") {
+            const o = await api("POST", `/api/orders/${id}/assign`);
+            toast(`Order #${id} assigned to ${o.courierName}`);
+          }
+          await refreshAll();
+        } catch (err) { toast(err.message, true); btn.disabled = false; }
+      });
+
+      $("#customerForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const f = e.target;
+        try {
+          const c = await api("POST", "/api/customers", {
+            name: f.name.value, email: f.email.value,
+            phone: f.phone.value, address: f.address.value,
+          });
+          knownCustomers.set(c.id, c.name);
+          refreshCustomerSelect();
+          $("#customerSelect").value = c.id;
+          f.reset();
+          toast(`Customer #${c.id} ${c.name} created`);
+        } catch (err) { toast(err.message, true); }
+      });
+
+      $("#courierForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const f = e.target;
+        try {
+          const c = await api("POST", "/api/couriers", { name: f.name.value, phone: f.phone.value });
+          f.reset();
+          toast(`Courier #${c.id} ${c.name} registered`);
+          await loadCouriers();
+        } catch (err) { toast(err.message, true); }
+      });
+
+      $("#orderForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const f = e.target;
+        const customerId = Number(f.customerId.value);
+        if (!customerId) { toast("Create or select a customer first", true); return; }
+        const items = [...$("#items").children].map(row => ({
+          productName: row.querySelector('[name=productName]').value,
+          quantity: Number(row.querySelector('[name=quantity]').value),
+          price: Number(row.querySelector('[name=price]').value),
+        }));
+        try {
+          const o = await api("POST", "/api/orders", {
+            customerId,
+            deliveryAddress: f.deliveryAddress.value || null,
+            items,
+          });
+          f.deliveryAddress.value = "";
+          $("#items").innerHTML = "";
+          $("#items").appendChild(itemRow());
+          toast(`Order #${o.id} placed (${money(o.total)})`);
+          await refreshAll();
+        } catch (err) { toast(err.message, true); }
+      });
+
+      refreshAll();
+    });
+  </script>
+</body>
+</html>
